@@ -150,5 +150,11 @@ module ActiveStorage
         ActiveRecord::Reflection.singleton_class.prepend(Reflection::ReflectionExtension)
       end
     end
+
+    initializer "active_record.set_signed_id_verifier_secret" do
+      ActiveSupport.on_load(:active_record) do
+        ActiveRecord::Base.signed_id_verifier_secret ||= -> { Rails.application.key_generator.generate_key("active_record/signed_id") }
+      end
+    end
   end
 end
