@@ -116,7 +116,8 @@ module ActiveStorage
       ActiveSupport.on_load(:active_storage_blob) do
         configs = Rails.configuration.active_storage.service_configurations ||=
           begin
-            config_file = Rails.root.join("config/storage.yml")
+            config_file = Rails.root.join("config/storage/#{Rails.env}.yml")
+            config_file = Rails.root.join("config/storage.yml") unless config_file.exist?
             raise("Couldn't find Active Storage configuration in #{config_file}") unless config_file.exist?
 
             ActiveSupport::ConfigurationFile.parse(config_file)
@@ -148,12 +149,6 @@ module ActiveStorage
       ActiveSupport.on_load(:active_record) do
         include Reflection::ActiveRecordExtensions
         ActiveRecord::Reflection.singleton_class.prepend(Reflection::ReflectionExtension)
-      end
-    end
-
-    initializer "active_record.set_signed_id_verifier_secret" do
-      ActiveSupport.on_load(:active_record) do
-        ActiveRecord::Base.signed_id_verifier_secret ||= -> { Rails.application.key_generator.generate_key("active_record/signed_id") }
       end
     end
   end
