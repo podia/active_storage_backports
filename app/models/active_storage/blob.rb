@@ -14,7 +14,7 @@
 # Blobs are intended to be immutable in as-so-far as their reference to a specific file goes. You're allowed to
 # update a blob's metadata on a subsequent pass, but you should not update the key or change the uploaded file.
 # If you need to create a derivative or otherwise change the blob, simply create a new blob and purge the old one.
-class ActiveStorage::Blob < ActiveRecord::Base
+class ActiveStorage::Blob < ActiveStorage::Record
   # We use constant paths in the following include calls to avoid a gotcha of
   # classic mode: If the parent application defines a top-level Analyzable, for
   # example, and ActiveStorage::Blob::Analyzable is not yet loaded, a bare
@@ -49,7 +49,7 @@ class ActiveStorage::Blob < ActiveRecord::Base
   scope :unattached, -> { where.missing(:attachments) }
 
   after_initialize do
-    self.service_name ||= self.class.service.name
+    self.service_name ||= self.class.service&.name
   end
 
   after_update_commit :update_service_metadata, if: :content_type_previously_changed?
@@ -74,8 +74,16 @@ class ActiveStorage::Blob < ActiveRecord::Base
     # that was created ahead of the upload itself on form submission.
     #
     # The signed ID is also used to create stable URLs for the blob through the BlobsController.
-    def find_signed!(id, record: nil)
-      super(id, purpose: :blob_id)
+    def find_signed(id, record: nil, purpose: :blob_id)
+      super(id, purpose: purpose)
+    end
+
+    # Works like +find_signed+, but will raise an +ActiveSupport::MessageVerifier::InvalidSignature+
+    # exception if the +signed_id+ has either expired, has a purpose mismatch, is for another record,
+    # or has been tampered with. It will also raise an +ActiveRecord::RecordNotFound+ exception if
+    # the valid signed id can't find a record.
+    def find_signed!(id, record: nil, purpose: :blob_id)
+      super(id, purpose: purpose)
     end
 
     def build_after_upload(io:, filename:, content_type: nil, metadata: nil, service_name: nil, identify: true, record: nil) #:nodoc:
@@ -322,6 +330,10 @@ class ActiveStorage::Blob < ActiveRecord::Base
 
     def allowed_inline?
       ActiveStorage.content_types_allowed_inline.include?(content_type)
+    end
+
+    def web_image?
+      ActiveStorage.web_image_content_types.include?(content_type)
     end
 
     def service_metadata

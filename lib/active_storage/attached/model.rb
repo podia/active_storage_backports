@@ -40,6 +40,13 @@ module ActiveStorage
       #     has_one_attached :avatar, service: :s3
       #   end
       #
+      # If you need to enable +strict_loading+ to prevent lazy loading of attachment,
+      # pass the +:strict_loading+ option. You can do:
+      #
+      #   class User < ApplicationRecord
+      #     has_one_attached :avatar
+      #   end
+      #
       def has_one_attached(name, dependent: :purge_later, service: nil)
         validate_service_configuration(name, service)
 
@@ -109,6 +116,13 @@ module ActiveStorage
       #
       #   class Gallery < ActiveRecord::Base
       #     has_many_attached :photos, service: :s3
+      #   end
+      #
+      # If you need to enable +strict_loading+ to prevent lazy loading of attachments,
+      # pass the +:strict_loading+ option. You can do:
+      #
+      #   class Gallery < ApplicationRecord
+      #     has_many_attached :photos
       #   end
       #
       def has_many_attached(name, dependent: :purge_later, service: nil)
